@@ -1,6 +1,6 @@
 package fmcr.visitors;
 /**
- * Starter code for JP2 lab 3. Name: Yusuf Ogunjobi Student Number: 1009097
+ * Starter code for JP2 lab 3. 
  */
 public abstract class BrickSet {
 	/** Fields */
@@ -16,20 +16,22 @@ public abstract class BrickSet {
 		this.numPieces = numPieces;
 	}
 	
-	/** Getters and setters */
-	public int getSetNumber() {
-		return setNumber;
-	}
+	/** Getters and setters 
+	 * 
+	 * */
+	public abstract int getSetNumber() {}
+		// return setNumber;
+	
 
-	public String getName(String play) {
+	public String getName(String play, String name) {
 		return name;
 	}
 
-	public String getTheme() {
+	public String getTheme(String theme) {
 		return theme;
 	}
 
-	public int getNumPieces() {
+	public int getNumPieces(String age) {
 		return numPieces;
 	}
 

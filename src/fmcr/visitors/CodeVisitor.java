@@ -5,9 +5,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 
-import javax.swing.plaf.SeparatorUI;
-
-import com.github.javaparser.Position;
 import com.github.javaparser.Range;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
@@ -16,11 +13,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
-import com.github.javaparser.ast.body.VariableDeclarator;
-import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.stmt.BlockStmt;
-import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import fmcr.factory.CodeAnalysisFactory;
@@ -40,8 +33,6 @@ import fmcr.util.Variable;
  */
 public class CodeVisitor extends VoidVisitorAdapter<Void> {
 	CodeAnalysisFactory caf;
-	boolean used = false;// flag for used parameter
-	BlockStmt blockStatement;
 
 	public CodeVisitor(CodeAnalysisFactory caf) {
 		this.caf = caf;
@@ -85,11 +76,11 @@ public class CodeVisitor extends VoidVisitorAdapter<Void> {
 		 * boolean value true only when the field is non-private and non-final,
 		 * otherwise a parameter value should be false (1 mark).
 		 */
-		
+
 		EnumSet<Modifier> modSet = fd.getModifiers();
 		if (!(modSet.contains(Modifier.FINAL) || modSet.contains(Modifier.PRIVATE))) {
 			fr.setInappropriateAccessLevel(true);
-		 //System.out.println(true);
+			// System.out.println(true);
 		} else {
 			fr.setInappropriateAccessLevel(false);
 
@@ -118,6 +109,8 @@ public class CodeVisitor extends VoidVisitorAdapter<Void> {
 		super.visit(md, arg);// Do not delete
 		Report mr = new Report(ReportTag.METHOD);// Do not delete
 
+		NodeList<Parameter> parameterList = md.getParameters(); // list of parameters in a method
+
 		/*
 		 * Q2a: Call setMethodName() method in mr. The method should take as parameter
 		 * the name of the method declaration (0.5 mark).
@@ -144,7 +137,7 @@ public class CodeVisitor extends VoidVisitorAdapter<Void> {
 		/*
 		 * Q2d:Populate mr with all the method's parameters (0.5 mark)
 		 */
-		md.getParameters().forEach(parameter -> {
+		parameterList.forEach(parameter -> {
 			mr.addParameter(new MParameter(parameter.getNameAsString(), parameter.getType().asString()));
 		});
 
@@ -154,30 +147,27 @@ public class CodeVisitor extends VoidVisitorAdapter<Void> {
 		 * declaration has a parameter that is unused in its body. Otherwise the value
 		 * should be false (2 mark).
 		 */
-		md.getBody().ifPresent(body -> {
-			blockStatement = md.getBody().get();
-		});
-		if (!blockStatement.isEmpty()) {// method has a body
-			ArrayList<Node> leaves = new ArrayList<Node>();
-			retrieveleaveNodes(blockStatement, leaves);
-			md.getParameters().forEach(parameter -> {
-				leaves.forEach(leave -> {
-					//check if leave is a SimpleName object
-					//and check it equals the SimpleName of parameter.
-					if (leave instanceof SimpleName) {
-						if (parameter.getName().equals(leave)) {
-							used = true;
-						}
+		ArrayList<Node> leaves = new ArrayList<Node>();
+		Optional<BlockStmt> optionalBlkStatement = md.getBody();
+		BlockStmt blockStatement = null; // body of method, from {, to }
+		parameterList = md.getParameters();
+		if (optionalBlkStatement.isPresent()) {
+			blockStatement = optionalBlkStatement.get();
+			if (!blockStatement.isEmpty()) {// method has a body
+				retrieveleaveNodes(blockStatement, leaves);
+				for (int i = 0; i < parameterList.size(); i++) {
+					if (leaves.contains(parameterList.get(i).getName())) {
+						mr.setUnusedParameter(false);
+					} else {
+						mr.setUnusedParameter(true);
+						break;// if a parameter is unused, discontinue the loop
 					}
-				});
-				if (used) {
-					mr.setUnusedParameter(false);
-				} else {
-					mr.setUnusedParameter(true);
 				}
-			});
-		} else {// no body, abstract method
-			mr.setUnusedParameter(true);
+			} else if (blockStatement.isEmpty() && !parameterList.isEmpty()) {// no body, abstract method
+				mr.setUnusedParameter(true);
+			} else {
+				mr.setUnusedParameter(false);
+			}
 		}
 
 		/*
@@ -196,7 +186,7 @@ public class CodeVisitor extends VoidVisitorAdapter<Void> {
 			int endLine = range.end.line;
 
 			mr.setStartLine(startLine);
-			mr.setSize(endLine - startLine + 1);// is adding one needed.
+			mr.setSize(endLine - startLine + 1);// is adding one needed?.
 		});
 
 		caf.updateMethodsTable(mr);// Do not Delete

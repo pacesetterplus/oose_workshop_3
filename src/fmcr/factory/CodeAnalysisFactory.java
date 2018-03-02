@@ -114,12 +114,12 @@ public class CodeAnalysisFactory {
 		if(!r.isDocumented()) {
 			Client.nonDocumentedMethods = Client.nonDocumentedMethods+1;
 		}
-		if(r.hasInappropriateAccessLevel()) {
+		if(r.hasUnusedParameter()) {
 			Client.noUnusedParameterBug = Client.noUnusedParameterBug+1;
 		}
 				
 		//include labels depending on report properties
-		if(r.hasInappropriateAccessLevel()) {
+		if(r.hasUnusedParameter()) {
 			if(r.isDocumented()) {
 				mv.model.addRow(new Object[]{Client.mBugIcon,Client.blankIcon, r,  r.getStartLine(), r.getSize()});
 			}
