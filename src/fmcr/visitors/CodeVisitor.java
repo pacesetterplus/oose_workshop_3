@@ -153,20 +153,16 @@ public class CodeVisitor extends VoidVisitorAdapter<Void> {
 		parameterList = md.getParameters();
 		if (optionalBlkStatement.isPresent()) {
 			blockStatement = optionalBlkStatement.get();
+			System.out.println(md.getNameAsString() + " has " + blockStatement.toString());
 			if (!blockStatement.isEmpty()) {// method has a body
 				retrieveleaveNodes(blockStatement, leaves);
+				mr.setUnusedParameter(false);
 				for (int i = 0; i < parameterList.size(); i++) {
-					if (leaves.contains(parameterList.get(i).getName())) {
-						mr.setUnusedParameter(false);
-					} else {
+					if (!leaves.contains(parameterList.get(i).getName())) {
 						mr.setUnusedParameter(true);
 						break;// if a parameter is unused, discontinue the loop
 					}
 				}
-			} else if (blockStatement.isEmpty() && !parameterList.isEmpty()) {// no body, abstract method
-				mr.setUnusedParameter(true);
-			} else {
-				mr.setUnusedParameter(false);
 			}
 		}
 
